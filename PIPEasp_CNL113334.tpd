@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright (c) 2014 Ericsson
+
+  All rights reserved. This program and the accompanying materials
+  are made available under the terms of the Eclipse Public License v1.0
+  which accompanies this distribution, and is available at
+  http://www.eclipse.org/legal/epl-v10.html
+
+
+   File:               PIPEasp_CNL113334.tpd
+   Description:        tpd project file
+   Rev:                R7A
+   Prodnr:             CNL 113 334
+   Updated:            2014-09-24
+   Contact:            http://ttcn.ericsson.se
+
+ -->
+<TITAN_Project_File_Information version="1.0">
+  <ProjectName>PIPEasp_CNL113334</ProjectName>
+  <Folders>
+    <FolderResource projectRelativePath="src" relativeURI="src"/>
+  </Folders>
+  <Files>
+    <FileResource projectRelativePath="src/PIPE.grp" relativeURI="src/PIPE.grp"/>
+    <FileResource projectRelativePath="src/PIPEasp_PT.cc" relativeURI="src/PIPEasp_PT.cc"/>
+    <FileResource projectRelativePath="src/PIPEasp_PT.hh" relativeURI="src/PIPEasp_PT.hh"/>
+    <FileResource projectRelativePath="src/PIPEasp_PortType.ttcn" relativeURI="src/PIPEasp_PortType.ttcn"/>
+    <FileResource projectRelativePath="src/PIPEasp_Types.ttcn" relativeURI="src/PIPEasp_Types.ttcn"/>
+  </Files>
+  <ActiveConfiguration>Default</ActiveConfiguration>
+  <Configurations>
+    <Configuration name="Default">
+      <ProjectProperties>
+        <MakefileSettings>
+          <generateInternalMakefile>true</generateInternalMakefile>
+          <GNUMake>true</GNUMake>
+          <incrementalDependencyRefresh>true</incrementalDependencyRefresh>
+          <targetExecutable>bin/PIPEasp_CNL113334</targetExecutable>
+          <linkerLibraries>
+            <listItem>util</listItem>
+          </linkerLibraries>
+        </MakefileSettings>
+        <LocalBuildSettings>
+          <workingDirectory>bin</workingDirectory>
+        </LocalBuildSettings>
+        <NamingCoventions>
+          <enableProjectSpecificSettings>true</enableProjectSpecificSettings>
+          <externalFunction>[e]?f_.*</externalFunction>
+        </NamingCoventions>
+      </ProjectProperties>
+      <FileProperties>
+        <FileResource>
+          <FilePath>src/PIPE.grp</FilePath>
+          <FileProperties>
+            <ExcludeFromBuild>true</ExcludeFromBuild>
+          </FileProperties>
+        </FileResource>
+      </FileProperties>
+    </Configuration>
+  </Configurations>
+</TITAN_Project_File_Information>
