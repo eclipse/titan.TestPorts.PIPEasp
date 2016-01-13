@@ -18,7 +18,7 @@
 //
 //  File:               PIPEasp_PT.hh
 //  Description:        Header file of PIPE testport implementation
-//  Rev:                R7A
+//  Rev:                R7C
 //  Prodnr:             CNL 113 334
 //
 
@@ -77,6 +77,8 @@ public:
 protected:
 	void user_map(const char *system_port);
 	void user_unmap(const char *system_port);
+
+  void start_child();
 
 	void user_start();
 	void user_stop();

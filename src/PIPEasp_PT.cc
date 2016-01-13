@@ -18,7 +18,7 @@
 //
 //  File:               PIPEasp_PT.cc
 //  Description:        Source code of PIPE testport implementation
-//  Rev:                R7A
+//  Rev:                R7C
 //  Prodnr:             CNL 113 334
 //
 
@@ -50,7 +50,6 @@
 #include <sys/stream.h>
 #include <sys/stropts.h>
 /////////////////////////////////////
-
 int forkpty_solaris (int *amaster, char *name, struct termios
          *termp, struct winsize *winp)
 {
@@ -281,8 +280,9 @@ void PIPEasp__PT::Handle_Fd_Event_Readable(int /*fd*/)
 	  }
 	}
 
-void PIPEasp__PT::user_map(const char */*system_port*/)
+void PIPEasp__PT::user_map(const char *system_port)
 {
+ log("%s mapping, child pid: %d",system_port, processServerPid);
     Handler_Add_Fd_Read(processServerUp);
     pipedata_len=1;
     pipedata_used=1;
@@ -329,8 +329,8 @@ void PIPEasp__PT::send_p_id_to_thread(const int p_id){
 
 void PIPEasp__PT::user_unmap(const char *system_port)
 {
-    log("user_unmap started *s",system_port);
-
+    log("user_unmap started %s",system_port);
+//printf("****user_unmap started %s",system_port);
     Uninstall_Handler();
     log("Sending unmap to processServer");
     TTCN_Buffer out_buff;
@@ -338,7 +338,9 @@ void PIPEasp__PT::user_unmap(const char *system_port)
     process_buffer.clear(); 
 
     int write_len=put_msg(out_buff,9,0,NULL,-1); // Sending unmap to processServer
-    write(processServerDown,out_buff.get_data(),write_len);
+    log("Sending unmap message to the fork server %d",write_len);
+    int res=write(processServerDown,out_buff.get_data(),write_len);
+    log("Message sent %d",res);
 
     if(main_data){
       for(int i=0;i<pipedata_len;i++) {
@@ -352,8 +354,12 @@ void PIPEasp__PT::user_unmap(const char *system_port)
     log("user_unmap finsihed");
 
 }
-
 void PIPEasp__PT::user_start()
+{
+start_child();
+}
+
+void PIPEasp__PT::start_child()
 {
 	  if(processServerPid != -1) return;
 	  int pipefd[2];
@@ -387,6 +393,20 @@ void PIPEasp__PT::user_start()
 	      // close the parent end of the pipes
 	      processServerUp=pipefd2[1];
 	      processServerDown=pipefd[0];
+
+// This is a hack
+// All fds (except the pipe) should be closed in order to avoid some "funny" communication lost between the mctr and PTC
+// There is no easy way to get the list of the open fds
+// The start_child called when the test port is started first time
+// which is right after the component initialization/first test case start
+// fd 0-3 are the standard io fds
+// there are only 2 or 3 fd opened by the TITAN run time (they should be closed)
+// So it is assummed the max value of the fd below 42
+for(int i=4;i<42;i++){
+  if((i!=processServerUp) && (i!=processServerDown)){
+    close(i);
+  }
+}
 	      close(pipefd[1]);
 	      close(pipefd2[0]);
 	      processHandler();
@@ -400,7 +420,7 @@ void PIPEasp__PT::user_start()
 	    // Parent process
 	    //
 
-	    TTCN_warning("Process started with pid: %d\r\n", processServerPid);
+//	    TTCN_warning("Process started with pid: %d\r\n", processServerPid);
 	    // close child end of the pipes
 	      processServerUp=pipefd2[0];
 	      processServerDown=pipefd[1];
@@ -1319,7 +1339,7 @@ void PIPEasp__PT::processHandler(){
   fd_set select_set;
   FD_ZERO(&working_set);
   FD_ZERO(&select_set);
-//printf("PIPEasp__PT::processHandler() started\r\n");
+//printf("PIPEasp__PT::processHandler() started %d\r\n",getpid());
   FD_SET(processServerDown, &working_set);
   max_fd=processServerDown;
   while(executing){
@@ -1369,7 +1389,7 @@ void PIPEasp__PT::processHandler(){
           int p_id;
           while((msg_len=get_len(process_buffer))!=-1){
             const unsigned char* msg=process_buffer.get_data();
- //printf("messages from ttcn, %d, %d,%d,%d\n", msg[0], msg_len, msg[1], msg[2]);
+//printf("messages from ttcn, %d, %d,%d,%d\n", msg[0], msg_len, msg[1], msg[2]);
             switch(msg[0]){
               case 1: // kill the server
                 close(processServerDown);
@@ -1497,7 +1517,7 @@ void PIPEasp__PT::processHandler(){
             close_and_remove_fd(thread_data[p_id].processStderr);
             thread_data[p_id].processStderr=-1;
             if(thread_data[p_id].processStdout==-1) handle_childDeath_inprocess(p_id);
-  //printf("handle_childDeath_inprocess end, \r\n");
+//  printf("handle_childDeath_inprocess end, \r\n");
           }
         }
         if(thread_data[p_id].processPty!=-1 && FD_ISSET(thread_data[p_id].processPty,&select_set)){
@@ -1515,7 +1535,7 @@ void PIPEasp__PT::processHandler(){
             close_and_remove_fd(thread_data[p_id].processPty);
             thread_data[p_id].processPty=-1;
             handle_childDeath_inprocess(p_id);
-  //printf("handle_childDeath_inprocess end, %d \r\n", executing);
+//  printf("handle_childDeath_inprocess end, %d \r\n", executing);
           }
         }
       }

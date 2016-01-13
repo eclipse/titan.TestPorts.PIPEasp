@@ -17,7 +17,7 @@
 ******************************************************************************/
 //
 //  File:         PIPEasp_PortType.ttcn
-//  Rev:          R7A
+//  Rev:          R7C
 //  Prodnr:       CNL 113 334
 
 module PIPEasp_PortType
