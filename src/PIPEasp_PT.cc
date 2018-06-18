@@ -18,7 +18,7 @@
 //
 //  File:               PIPEasp_PT.cc
 //  Description:        Source code of PIPE testport implementation
-//  Rev:                R7C
+//  Rev:                R7D
 //  Prodnr:             CNL 113 334
 //
 
@@ -121,8 +121,9 @@ namespace PIPEasp__PortType {
 
 PIPEasp__PT::PIPEasp__PT(const char *par_port_name)
 	: PIPEasp__PT_BASE(par_port_name)
-        , pipedata_len(0)
-        , pipedata_used(0)
+        , maindata_len(0)
+        , maindata_used(0)
+        , threaddata_len(0)
         , main_data(NULL)
         , thread_data(NULL)
         , lineMode(true)
@@ -158,7 +159,7 @@ PIPEasp__PT::~PIPEasp__PT()
   }
   
   if(main_data){
-    for(int i=0;i<pipedata_len;i++) {
+    for(int i=0;i<maindata_len;i++) {
       if((main_data+i)->stdout_buffer){delete (main_data+i)->stdout_buffer;}; 
       if((main_data+i)->stderr_buffer){delete (main_data+i)->stderr_buffer;};
     }
@@ -284,8 +285,8 @@ void PIPEasp__PT::user_map(const char *system_port)
 {
  log("%s mapping, child pid: %d",system_port, processServerPid);
     Handler_Add_Fd_Read(processServerUp);
-    pipedata_len=1;
-    pipedata_used=1;
+    maindata_len=1;
+    maindata_used=1;
     main_data=(pipedata_main*)Malloc(sizeof(pipedata_main));
     setup_pipedata_main(0); 
     main_data[0].reuse=true;
@@ -343,7 +344,7 @@ void PIPEasp__PT::user_unmap(const char *system_port)
     log("Message sent %d",res);
 
     if(main_data){
-      for(int i=0;i<pipedata_len;i++) {
+      for(int i=0;i<maindata_len;i++) {
         if((main_data+i)->stdout_buffer){delete (main_data+i)->stdout_buffer;}; 
         if((main_data+i)->stderr_buffer){delete (main_data+i)->stderr_buffer;};
       }
@@ -1020,7 +1021,7 @@ void PIPEasp__PT::handle_childDeath(const int p_id) {
     main_data[p_id].stdout_buffer=NULL;
     Free(main_data[p_id].stderr_buffer);
     main_data[p_id].stderr_buffer=NULL;
-    pipedata_used--;
+    maindata_used--;
   }
 }
 
@@ -1435,7 +1436,7 @@ void PIPEasp__PT::processHandler(){
 //printf("kill(%d,%d) returned %d\r\n", processPid,sig_no,a);
                 break;
               case 9: // unmap command
-                for(int i=0;i<pipedata_len;i++){
+                for(int i=0;i<threaddata_len;i++){
                   if(thread_data[i].processStdin!=-1){ 
                     close(thread_data[i].processStdin);
                     thread_data[i].processStdin=-1;
@@ -1461,13 +1462,13 @@ void PIPEasp__PT::processHandler(){
               
               case 12:
                 p_id=((int)msg[5]<<8) + (int)msg[6];
-                if(pipedata_len<=p_id){
+                if(threaddata_len<=p_id){
                   int new_size=p_id+1;
                   thread_data=(pipedata_thread *)Realloc(thread_data,new_size*sizeof(pipedata_thread));
-                  for(int i= pipedata_len;i<new_size;i++){
+                  for(int i= threaddata_len;i<new_size;i++){
                     init_pipedata(i);
                   }
-                  pipedata_len=new_size;
+                  threaddata_len=new_size;
                 }
                 init_pipedata(p_id);
                 break;
@@ -1485,7 +1486,7 @@ void PIPEasp__PT::processHandler(){
           return;
         }
       }
-      for(int p_id=0;result>0 && p_id<pipedata_len;p_id++){
+      for(int p_id=0;result>0 && p_id<threaddata_len;p_id++){
         if(thread_data[p_id].processStdout!=-1 && FD_ISSET(thread_data[p_id].processStdout,&select_set)){
           result--;
           nBytes = PIPE_BUF_SIZE;
@@ -1801,7 +1802,7 @@ void PIPEasp__PT::close_and_remove_fd(int fd){
   FD_CLR(fd,&working_set);
   if(fd==max_fd){
     max_fd=processServerDown;
-    for(int i=0;i<pipedata_len;i++){
+    for(int i=0;i<threaddata_len;i++){
       if(thread_data[i].processStdout!=-1 && thread_data[i].processStdout!=fd){
         max_fd=max_fd>thread_data[i].processStdout?max_fd:thread_data[i].processStdout;
       }
@@ -1818,12 +1819,12 @@ void PIPEasp__PT::close_and_remove_fd(int fd){
 INTEGER f__PIPE__request__p__id(PIPEasp__PortType::PIPEasp__PT& pl__port, BOOLEAN const&pl__reuse){
   int return_value=-1;
   
-  if((pl__port.pipedata_used+1)>pl__port.pipedata_len){
-    return_value=pl__port.pipedata_len;
-    pl__port.pipedata_len++;
-    pl__port.main_data=(PIPEasp__PT::pipedata_main*)Realloc(pl__port.main_data,pl__port.pipedata_len*sizeof(PIPEasp__PT::pipedata_main));
+  if((pl__port.maindata_used+1)>pl__port.maindata_len){
+    return_value=pl__port.maindata_len;
+    pl__port.maindata_len++;
+    pl__port.main_data=(PIPEasp__PT::pipedata_main*)Realloc(pl__port.main_data,pl__port.maindata_len*sizeof(PIPEasp__PT::pipedata_main));
   } else {
-    for(int i=0;i<pl__port.pipedata_len;i++){
+    for(int i=0;i<pl__port.maindata_len;i++){
       if(!pl__port.main_data[i].state){
         return_value=i;
         break;
@@ -1832,7 +1833,7 @@ INTEGER f__PIPE__request__p__id(PIPEasp__PortType::PIPEasp__PT& pl__port, BOOLEA
   }
 
 
-  pl__port.pipedata_used++;
+  pl__port.maindata_used++;
   pl__port.setup_pipedata_main(return_value);
   pl__port.main_data[return_value].reuse=pl__reuse;
   pl__port.send_p_id_to_thread(return_value);
@@ -1841,7 +1842,7 @@ INTEGER f__PIPE__request__p__id(PIPEasp__PortType::PIPEasp__PT& pl__port, BOOLEA
 
 BOOLEAN f__PIPE__release__p__id(PIPEasp__PortType::PIPEasp__PT& pl__port, INTEGER const&pl__pid){
   int p_id=(int)pl__pid;
-  if( (p_id>=0) && (p_id<pl__port.pipedata_len) && pl__port.main_data[p_id].state && !pl__port.main_data[p_id].processExecuting){
+  if( (p_id>=0) && (p_id<pl__port.maindata_len) && pl__port.main_data[p_id].state && !pl__port.main_data[p_id].processExecuting){
     pl__port.main_data[p_id].state=0;
     if(pl__port.main_data[p_id].stdout_buffer) {
       Free(pl__port.main_data[p_id].stdout_buffer);
@@ -1851,7 +1852,7 @@ BOOLEAN f__PIPE__release__p__id(PIPEasp__PortType::PIPEasp__PT& pl__port, INTEGE
       Free(pl__port.main_data[p_id].stderr_buffer);
       pl__port.main_data[p_id].stderr_buffer=NULL;
     }
-    pl__port.pipedata_used--;
+    pl__port.maindata_used--;
     return true;
   }
 

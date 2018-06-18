@@ -18,7 +18,7 @@
 //
 //  File:               PIPEasp_PT.hh
 //  Description:        Header file of PIPE testport implementation
-//  Rev:                R7C
+//  Rev:                R7D
 //  Prodnr:             CNL 113 334
 //
 
@@ -68,8 +68,9 @@ public:
     
   };
 
-  int pipedata_len;
-  int pipedata_used;
+  int maindata_len;
+  int maindata_used;
+  int threaddata_len;
   pipedata_main *main_data;
   pipedata_thread *thread_data;
   void setup_pipedata_main(int idx);
@@ -109,7 +110,7 @@ private:
 
 
   
-  boolean pipe_id_valid(const int p_id){if((p_id>=0)&&(p_id<pipedata_len)){return main_data[p_id].state==1;} else {return false;}}
+  boolean pipe_id_valid(const int p_id){if((p_id>=0)&&(p_id<maindata_len)){return main_data[p_id].state==1;} else {return false;}}
   
 
         int execCommand(const char* command);
@@ -148,7 +149,7 @@ private:
         void newcmd_pty(const int p_id,const char* command);
         
         void close_and_remove_fd(int fd);
-        void free_thread_data(){ if(thread_data){Free(thread_data);thread_data=NULL;pipedata_used=0;pipedata_len=0;}}
+        void free_thread_data(){ if(thread_data){Free(thread_data);thread_data=NULL;threaddata_len=0;}}
         void init_pipedata(int idx);
 
 private:
