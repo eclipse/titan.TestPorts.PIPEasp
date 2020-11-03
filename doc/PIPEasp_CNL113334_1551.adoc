@@ -356,7 +356,7 @@ This ASP can only be received by the test suite: DIRECTION IN
 [source]
 ----
 type record ASP_PError{
-  charstring errormessage
+  charstring errorMessage
 };
 ----
 
